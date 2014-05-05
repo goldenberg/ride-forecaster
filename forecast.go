@@ -36,7 +36,10 @@ func main() {
 	var segment = g.Tracks[0].Segments[0]
 	// fmt.Printf("Gpx track segments %s", segment)
 
-	for _, pt := range segment.Points {
+	for i, pt := range segment.Points {
+		if i%25 != 0 {
+			continue
+		}
 		f, err := forecast.Get(API_KEY,
 			fmt.Sprintf("%.4f", pt.Lat),
 			fmt.Sprintf("%.4f", pt.Lon),
@@ -45,10 +48,10 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("(%.4f, %.4f) %s: %s \n",
+		fmt.Printf("(%.4f, %.4f) %s: %.1f (%.1f) \n",
 			pt.Lat, pt.Lon,
 			pt.Timestamp,
-			celsiusToFahrenheit(f.Currently.Temperature))
+			celsiusToFahrenheit(f.Currently.Temperature))_
 		// fmt.Printf("%s: %s\n", f.Timezone, f.Currently.Summary)
 		// fmt.Printf("humidity: %.2f\n", f.Currently.Humidity)
 		// fmt.Printf("temperature: %.2f Celsius\n", f.Currently.Temperature)
