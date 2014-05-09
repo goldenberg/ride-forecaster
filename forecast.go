@@ -17,46 +17,46 @@ func celsiusToFahrenheit(t float64) float64 {
 	return 32 + 1.8*t
 }
 
-var increment = 5 * time.Minute
-
 func main() {
-	// lat := "43.6595"
-	// long := "-79.3433"
-
 	flag.Parse()
 	var fname = flag.Arg(0)
 	g, err := gpx.Parse(fname)
 	if err != nil {
 		log.Fatalf("Error '%s' opening '%s'", err, fname)
 	}
-	// fmt.Printf("GPX:", g)
-	fmt.Printf("GPX timestamp %s", g.Metadata.Timestamp)
-	fmt.Printf("GPX bounds %s", g.Bounds())
 
-	var segment = g.Tracks[0].Segments[0]
-	// fmt.Printf("Gpx track segments %s", segment)
+	// Print the start time
+	start, err := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
+	if err != nil {
+		log.Fatalf("Error '%s' parsing timestamp '%s'", err, g.Metadata.Timestamp)
+	}
+	fmt.Printf("GPX start %s\n", start)
 
-	for i, pt := range segment.Points {
+	// Print weather at every nth point
+	var track = g.Tracks[0]
+	for i, pt := range track.Segments[0].Points {
 		if i%25 != 0 {
 			continue
 		}
-		f, err := forecast.Get(API_KEY,
-			fmt.Sprintf("%.4f", pt.Lat),
-			fmt.Sprintf("%.4f", pt.Lon),
-			pt.Timestamp, forecast.CA)
+		f, err := Forecast(pt)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("(%.4f, %.4f) %s: %.1f (%.1f) \n",
-			pt.Lat, pt.Lon,
-			pt.Timestamp,
-			celsiusToFahrenheit(f.Currently.Temperature))_
-		// fmt.Printf("%s: %s\n", f.Timezone, f.Currently.Summary)
-		// fmt.Printf("humidity: %.2f\n", f.Currently.Humidity)
-		// fmt.Printf("temperature: %.2f Celsius\n", f.Currently.Temperature)
-		// fmt.Printf("wind speed: %.2f\n", f.Currently.WindSpeed)
+		Print(pt, f)
 	}
+}
 
-	// fmt.Printf("Ride starting at %s", g.Metadata.Timestamp)
+func Forecast(pt gpx.GpxWpt) (f *forecast.Forecast, err error) {
+	f, err = forecast.Get(API_KEY,
+		fmt.Sprintf("%.4f", pt.Lat),
+		fmt.Sprintf("%.4f", pt.Lon),
+		pt.Timestamp, forecast.CA)
+	return
+}
+
+func Print(pt gpx.GpxWpt, f *forecast.Forecast) {
+	fmt.Printf("(%.4f, %.4f) %s: %.1f \n",
+		pt.Lat, pt.Lon, pt.Timestamp,
+		celsiusToFahrenheit(f.Currently.Temperature))
 }
