@@ -56,7 +56,8 @@ func Forecast(pt gpx.GpxWpt) (f *forecast.Forecast, err error) {
 }
 
 func Print(pt gpx.GpxWpt, f *forecast.Forecast) {
-	fmt.Printf("(%.4f, %.4f) %s: %.1f \n",
+	fmt.Printf("(%.4f, %.4f) %s: %.1f %.1f mph \n",
 		pt.Lat, pt.Lon, pt.Timestamp,
-		celsiusToFahrenheit(f.Currently.Temperature))
+		celsiusToFahrenheit(f.Currently.Temperature),
+		f.Currently.Windspeed)
 }
