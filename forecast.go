@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strconv"
+	// rideforecaster "github.com/goldenberg/rideforecaster"
 	forecast "github.com/mlbright/forecast/v2"
 	gpx "github.com/ptrv/go-gpx"
 	"log"
@@ -33,31 +35,35 @@ func main() {
 	fmt.Printf("GPX start %s\n", start)
 
 	// Print weather at every nth point
-	var track = g.Tracks[0]
-	for i, pt := range track.Segments[0].Points {
-		if i%25 != 0 {
+	track := NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
+
+	for i := 0; i < track.Length(); i++ {
+		if i%30 != 0 {
 			continue
 		}
-		f, err := Forecast(pt)
+		wpt := track.Waypoint(i)
+		f, err := Forecast(wpt)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		Print(pt, f)
+		Print(wpt, f)
 	}
 }
 
-func Forecast(pt gpx.GpxWpt) (f *forecast.Forecast, err error) {
+func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	f, err = forecast.Get(API_KEY,
-		fmt.Sprintf("%.4f", pt.Lat),
-		fmt.Sprintf("%.4f", pt.Lon),
-		pt.Timestamp, forecast.CA)
+		fmt.Sprintf("%.4f", wpt.Lng()),
+		fmt.Sprintf("%.4f", wpt.Lat()),
+		strconv.FormatInt(wpt.Time.Unix(), 10),
+		forecast.US)
 	return
 }
 
-func Print(pt gpx.GpxWpt, f *forecast.Forecast) {
-	fmt.Printf("(%.4f, %.4f) %s: %.1f %.1f mph \n",
-		pt.Lat, pt.Lon, pt.Timestamp,
+func Print(wpt *Waypoint, f *forecast.Forecast) {
+	fmt.Printf("(%.4f, %.4f) %s: %.1f° %.1f mph %.0f \n",
+		wpt.Lat(), wpt.Lng(), wpt.Time.Format(gpx.TIMELAYOUT),
 		celsiusToFahrenheit(f.Currently.Temperature),
-		f.Currently.Windspeed)
+		f.Currently.WindSpeed,
+		f.Currently.WindBearing)
 }
