@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math"
 	"strconv"
 	// rideforecaster "github.com/goldenberg/rideforecaster"
 	forecast "github.com/mlbright/forecast/v2"
@@ -15,6 +16,8 @@ var g *gpx.Gpx
 
 var API_KEY = "806d1d0e800d3f1466ebec725982cf00"
 
+var SanFrancisco *time.Location
+
 func celsiusToFahrenheit(t float64) float64 {
 	return 32 + 1.8*t
 }
@@ -25,6 +28,11 @@ func main() {
 	g, err := gpx.Parse(fname)
 	if err != nil {
 		log.Fatalf("Error '%s' opening '%s'", err, fname)
+	}
+
+	SanFrancisco, err = time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		log.Fatal("Couldn't load location", err)
 	}
 
 	// Print the start time
@@ -42,12 +50,20 @@ func main() {
 			continue
 		}
 		wpt := track.Waypoint(i)
+		next := track.Path.GetAt(i + 1)
+
 		f, err := Forecast(wpt)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		Print(wpt, f)
+		bearing := NewBearingFromDegrees(wpt.BearingTo(next))
+		windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
+
+		windAngle := (windBearing - bearing).Normalize()
+		effectiveHeadwind := math.Cos(float64(windAngle)) * f.Currently.WindSpeed
+
+		Print(wpt, f, bearing, windBearing, windAngle, effectiveHeadwind)
 	}
 }
 
@@ -60,10 +76,12 @@ func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	return
 }
 
-func Print(wpt *Waypoint, f *forecast.Forecast) {
-	fmt.Printf("(%.4f, %.4f) %s: %.1f° %.1f mph %.0f \n",
-		wpt.Lat(), wpt.Lng(), wpt.Time.Format(gpx.TIMELAYOUT),
-		celsiusToFahrenheit(f.Currently.Temperature),
+func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing, effectiveHeadwind float64) {
+	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %4.1f mph at %s.   Effective: %5.1f mph at %s\n",
+		wpt.Time.In(SanFrancisco).Format("03:04"), wpt.Lng(), wpt.Lat(), bearing,
+		f.Currently.Temperature,
 		f.Currently.WindSpeed,
-		f.Currently.WindBearing)
+		windBearing,
+		effectiveHeadwind,
+		windAngle)
 }
