@@ -14,13 +14,55 @@ type Waypoint struct {
 	Time time.Time
 }
 
+// maybe shouldn't embed because track.Resample() means a 
+// very different thing than Path.Resample()
 type Track struct {
 	*geo.Path
 	times []time.Time
 }
 
+// Velocity is measured in m/s
+type Velocity float64
+
+func (v Velocity) Mph() float64 {
+	return float64(v/1609.34) * 3600
+}
+
+func (v Velocity) Ms() float64 {
+	return float64(v)
+}
+
+func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
+	var pathDist = p.GeoDistance()
+	var n = p.Length()
+	var times = make([]time.Time, n, n)
+
+	times[0] = start
+
+	for i := 0; i < n-1; i++ {
+		var segmentDist = p.GetAt(i).GeoDistanceFrom(p.GetAt(i+1), true)
+		var timeDelta = time.Duration(segmentDist/pathDist/float64(v)*1000) * time.Millisecond
+		times[i+1] = times[i].Add(timeDelta)
+	}
+	return NewTrack(p, times)
+}
+
 func (t *Track) Waypoint(i int) *Waypoint {
 	return &Waypoint{t.GetAt(i), t.times[i]}
+}
+
+func (t *Track) TimeShift(newStart time.Time) *Track {
+	var newTimes = make([]time.Time, len(t.times), len(t.times))
+	var delta = newStart.Sub(t.times[0])
+
+	for i := 0; i < len(t.times); i++ {
+		newTimes[i] = t.times[i].Add(delta)
+	}
+	return NewTrack(t.Path, newTimes)
+}
+
+func NewTrack(p *geo.Path, times []time.Time) *Track {
+	return &Track{p, times}
 }
 
 func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {

@@ -17,12 +17,14 @@ var g *gpx.Gpx
 var API_KEY = "806d1d0e800d3f1466ebec725982cf00"
 
 var SanFrancisco *time.Location
+var start timeValue
 
 func celsiusToFahrenheit(t float64) float64 {
 	return 32 + 1.8*t
 }
 
 func main() {
+	flag.Var(&start, "start", "Start time (e.g. "+time.Stamp+")")
 	flag.Parse()
 	var fname = flag.Arg(0)
 	g, err := gpx.Parse(fname)
@@ -36,14 +38,19 @@ func main() {
 	}
 
 	// Print the start time
-	start, err := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
+	originalStart, err := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
 	if err != nil {
 		log.Fatalf("Error '%s' parsing timestamp '%s'", err, g.Metadata.Timestamp)
 	}
-	fmt.Printf("GPX start %s\n", start)
+	fmt.Printf("Original GPX start %s\n", originalStart)
 
 	// Print weather at every nth point
 	track := NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
+
+	// if !start.IsZero() {
+	track = track.TimeShift(originalStart.Add(time.Duration(24*3) * time.Hour))
+	fmt.Printf("New start: %s\n", track.times[0])
+	// }
 
 	for i := 0; i < track.Length(); i++ {
 		if i%30 != 0 {
@@ -78,7 +85,7 @@ func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 
 func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing, effectiveHeadwind float64) {
 	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %4.1f mph at %s.   Effective: %5.1f mph at %s\n",
-		wpt.Time.In(SanFrancisco).Format("03:04"), wpt.Lng(), wpt.Lat(), bearing,
+		wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"), wpt.Lng(), wpt.Lat(), bearing,
 		f.Currently.Temperature,
 		f.Currently.WindSpeed,
 		windBearing,
