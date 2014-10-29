@@ -18,6 +18,7 @@ var API_KEY = "806d1d0e800d3f1466ebec725982cf00"
 
 var SanFrancisco *time.Location
 var start timeValue
+var velocity velocityValue
 
 func celsiusToFahrenheit(t float64) float64 {
 	return 32 + 1.8*t
@@ -25,6 +26,7 @@ func celsiusToFahrenheit(t float64) float64 {
 
 func main() {
 	flag.Var(&start, "start", "Start time (e.g. "+time.Stamp+")")
+	flag.Var(&velocity, "velocity", "Average velocity (in mph)")
 	flag.Parse()
 	var fname = flag.Arg(0)
 	g, err := gpx.Parse(fname)
@@ -37,25 +39,31 @@ func main() {
 		log.Fatalf("Couldn't load location %s", err)
 	}
 
-	// Print the start time
-	originalStart, err := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
-	if err != nil {
-		log.Fatalf("Error '%s' parsing timestamp '%s'", err, g.Metadata.Timestamp)
-	}
-	fmt.Printf("Original GPX start %s\n", originalStart)
-
 	// Load the Track from the GPX file
 	track := NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
 
+	// Print the start time. Parsing will fail if there is no Timestamp
+	originalStart, err := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
+	fmt.Printf("Original GPX start %s\n", originalStart)
+
 	// If the user specified a time, TimeShift the track.
-	var newStart = start.Get()
-	if !newStart.IsZero() {
-		track = track.TimeShift(newStart)
+	var userStart = start.Get()
+	if !userStart.IsZero() {
+		track = track.TimeShift(userStart)
 		fmt.Printf("New start: %s\n", track.times[0])
 	}
 
-	// Print weather at every nth point
-	for i := 0; i < track.Length(); i++ {
+	// If the user specified a velocity, model the track.
+	var userVelocity = velocity.Get()
+	if userVelocity != 0 {
+		fmt.Println("Constant velocity: ", userVelocity.Mph())
+		track = PredictTrack(track.Path, velocity.Get(), userStart)
+	}
+
+	// If we still don't have a start time
+	// Print weather at every nth point.
+	// Ignore the last point because we won't be able to calculate the bearing at it.
+	for i := 0; i < track.Length()-1; i++ {
 		// Crude sampling to be replaced a better spline or similar
 		if i%30 != 0 {
 			continue

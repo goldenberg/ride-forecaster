@@ -4,7 +4,7 @@ import (
 	"fmt"
 	geo "github.com/paulmach/go.geo"
 	gpx "github.com/ptrv/go-gpx"
-	"log"
+	// "log"
 	"math"
 	"time"
 )
@@ -24,6 +24,10 @@ type Track struct {
 // Velocity is measured in m/s
 type Velocity float64
 
+func NewVelocityFromMph(mph float64) Velocity {
+	return Velocity(mph * 1609.34 / 3600.)
+
+}
 func (v Velocity) Mph() float64 {
 	return float64(v/1609.34) * 3600
 }
@@ -34,7 +38,7 @@ func (v Velocity) Ms() float64 {
 
 // PredictTrack converts a Path into a Track assuming a constant velocity and start time.
 func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
-	var pathDist = p.GeoDistance()
+	// var pathDist = p.GeoDistance()
 	var n = p.Length()
 	var times = make([]time.Time, n, n)
 
@@ -42,7 +46,8 @@ func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
 
 	for i := 0; i < n-1; i++ {
 		var segmentDist = p.GetAt(i).GeoDistanceFrom(p.GetAt(i+1), true)
-		var timeDelta = time.Duration(segmentDist/pathDist/float64(v)*1000) * time.Millisecond
+		// XXX: This can't possibly be idiomatic but it seems to work
+		var timeDelta = time.Duration(segmentDist / v.Ms() * float64(time.Second))
 		times[i+1] = times[i].Add(timeDelta)
 	}
 	return NewTrack(p, times)
@@ -75,7 +80,9 @@ func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {
 		points[i] = *geo.NewPoint(wpt.Lat, wpt.Lon)
 		t, err := time.Parse(gpx.TIMELAYOUT, wpt.Timestamp)
 		if err != nil {
-			log.Fatalf("Error '%s' parsing timestamp '%s'", err, wpt.Timestamp)
+			// log.Fatalf("Error '%s' parsing timestamp '%s'", err, wpt.Timestamp)
+			// XXXXXXX: really really stupid
+			times[i] = time.Now()
 		}
 		times[i] = t
 	}
