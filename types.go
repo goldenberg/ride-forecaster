@@ -14,7 +14,7 @@ type Waypoint struct {
 	Time time.Time
 }
 
-// maybe shouldn't embed because track.Resample() means a 
+// maybe shouldn't embed because track.Resample() means a
 // very different thing than Path.Resample()
 type Track struct {
 	*geo.Path
@@ -32,6 +32,7 @@ func (v Velocity) Ms() float64 {
 	return float64(v)
 }
 
+// PredictTrack converts a Path into a Track assuming a constant velocity and start time.
 func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
 	var pathDist = p.GeoDistance()
 	var n = p.Length()
@@ -47,10 +48,7 @@ func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
 	return NewTrack(p, times)
 }
 
-func (t *Track) Waypoint(i int) *Waypoint {
-	return &Waypoint{t.GetAt(i), t.times[i]}
-}
-
+// TimeShift translates the Track to a different start time.
 func (t *Track) TimeShift(newStart time.Time) *Track {
 	var newTimes = make([]time.Time, len(t.times), len(t.times))
 	var delta = newStart.Sub(t.times[0])
@@ -63,6 +61,10 @@ func (t *Track) TimeShift(newStart time.Time) *Track {
 
 func NewTrack(p *geo.Path, times []time.Time) *Track {
 	return &Track{p, times}
+}
+
+func (t *Track) Waypoint(i int) *Waypoint {
+	return &Waypoint{t.GetAt(i), t.times[i]}
 }
 
 func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {
@@ -118,6 +120,9 @@ func (b Bearing) Degrees() float64 {
 	return float64(180.0 * b / math.Pi)
 }
 
+func (b Bearing) OClock() int {
+	return int(12.0 * b / math.Pi)
+}
 func (b Bearing) Radians() float64 {
 	return float64(b)
 }
