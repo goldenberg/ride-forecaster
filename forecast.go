@@ -44,16 +44,19 @@ func main() {
 	}
 	fmt.Printf("Original GPX start %s\n", originalStart)
 
-	// Print weather at every nth point
+	// Load the Track from the GPX file
 	track := NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
 
+	// If the user specified a time, TimeShift the track.
 	var newStart = start.Get()
 	if !newStart.IsZero() {
 		track = track.TimeShift(newStart)
 		fmt.Printf("New start: %s\n", track.times[0])
 	}
 
+	// Print weather at every nth point
 	for i := 0; i < track.Length(); i++ {
+		// Crude sampling to be replaced a better spline or similar
 		if i%30 != 0 {
 			continue
 		}
@@ -65,6 +68,7 @@ func main() {
 			log.Fatal(err)
 		}
 
+		// Compute the headwind relative to current bearing
 		bearing := NewBearingFromDegrees(wpt.BearingTo(next))
 		windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
 
