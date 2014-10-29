@@ -34,7 +34,7 @@ func main() {
 
 	SanFrancisco, err = time.LoadLocation("America/Los_Angeles")
 	if err != nil {
-		log.Fatal("Couldn't load location", err)
+		log.Fatalf("Couldn't load location %s", err)
 	}
 
 	// Print the start time
@@ -47,10 +47,11 @@ func main() {
 	// Print weather at every nth point
 	track := NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
 
-	// if !start.IsZero() {
-	track = track.TimeShift(originalStart.Add(time.Duration(24*3) * time.Hour))
-	fmt.Printf("New start: %s\n", track.times[0])
-	// }
+	var newStart = start.Get()
+	if !newStart.IsZero() {
+		track = track.TimeShift(newStart)
+		fmt.Printf("New start: %s\n", track.times[0])
+	}
 
 	for i := 0; i < track.Length(); i++ {
 		if i%30 != 0 {
