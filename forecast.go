@@ -3,12 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math"
-	"strconv"
-	// rideforecaster "github.com/goldenberg/rideforecaster"
 	forecast "github.com/mlbright/forecast/v2"
 	gpx "github.com/ptrv/go-gpx"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -81,9 +79,8 @@ func main() {
 		windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
 
 		windAngle := (windBearing - bearing).Normalize()
-		effectiveHeadwind := math.Cos(float64(windAngle)) * f.Currently.WindSpeed
 
-		Print(wpt, f, bearing, windBearing, windAngle, effectiveHeadwind)
+		Print(wpt, f, bearing, windBearing, windAngle)
 	}
 }
 
@@ -96,14 +93,13 @@ func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	return
 }
 
-func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing, effectiveHeadwind float64) {
-	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph at %s.   Effective: %5.1f mph at %s\n",
+func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing) {
+	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %i \n",
 		wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"), wpt.Lng(), wpt.Lat(), bearing,
 		f.Currently.Temperature,
 		f.Currently.WindSpeed,
 		f.Currently.PrecipType,
 		f.Currently.PrecipProbability,
 		windBearing,
-		effectiveHeadwind,
-		windAngle)
+		windAngle.OClock())
 }

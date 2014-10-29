@@ -124,11 +124,11 @@ func (b Bearing) Normalize() Bearing {
 	return b
 }
 func (b Bearing) Degrees() float64 {
-	return float64(180.0 * b / math.Pi)
+	return float64(360.0 * b / (2 * math.Pi))
 }
 
 func (b Bearing) OClock() int {
-	return int(12.0 * b / math.Pi)
+	return int(b.Degrees() * 12. / 360.)
 }
 func (b Bearing) Radians() float64 {
 	return float64(b)
