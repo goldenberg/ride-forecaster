@@ -94,12 +94,13 @@ func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 }
 
 func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing) {
-	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %i \n",
-		wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"), wpt.Lng(), wpt.Lat(), bearing,
+	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %.f o'clock \n",
+		wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"),
+		wpt.Lng(), wpt.Lat(), bearing,
 		f.Currently.Temperature,
-		f.Currently.WindSpeed,
+		f.Currently.PrecipProbability*100.,
 		f.Currently.PrecipType,
-		f.Currently.PrecipProbability,
+		f.Currently.WindSpeed,
 		windBearing,
 		windAngle.OClock())
 }
