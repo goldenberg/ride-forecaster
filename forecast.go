@@ -15,6 +15,8 @@ var g *gpx.Gpx
 var API_KEY = "806d1d0e800d3f1466ebec725982cf00"
 
 var SanFrancisco *time.Location
+
+// Default to Tomorrow
 var start timeValue
 var velocity velocityValue
 
@@ -23,7 +25,9 @@ func celsiusToFahrenheit(t float64) float64 {
 }
 
 func main() {
-	flag.Var(&start, "start", "Start time (e.g. "+time.Stamp+")")
+	start = timeValue(time.Now())
+	velocity = velocityValue(NewVelocityFromMph(11))
+	flag.Var(&start, "start", "Start time")
 	flag.Var(&velocity, "velocity", "Average velocity (in mph)")
 	flag.Parse()
 	var fname = flag.Arg(0)

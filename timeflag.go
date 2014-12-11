@@ -53,5 +53,5 @@ func (t *velocityValue) Set(s string) error {
 func (t *velocityValue) Get() Velocity { return Velocity(*t) }
 
 func (t *velocityValue) String() string {
-	return fmt.Sprintf("%s mph", t.Get().Mph())
+	return fmt.Sprintf("%.1f mph", t.Get().Mph())
 }
