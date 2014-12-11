@@ -4,7 +4,7 @@ import (
 	"fmt"
 	geo "github.com/paulmach/go.geo"
 	gpx "github.com/ptrv/go-gpx"
-	"math"
+	"sort"
 	"time"
 )
 
@@ -21,9 +21,6 @@ func NewTrack(p *geo.Path, times []time.Time) (*Track, error) {
 			len(times))
 	}
 	return &Track{p, times}, nil
-}
-func (t *Track) Path() *geo.Path {
-	return t.path
 }
 
 // PredictTrack converts a Path into a Track assuming a constant velocity and start time.
@@ -47,6 +44,10 @@ func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
 	return t
 }
 
+func (t *Track) Path() *geo.Path {
+	return t.path
+}
+
 // TimeShift translates the Track to a different start time.
 func (t *Track) TimeShift(newStart time.Time) *Track {
 	var newTimes = make([]time.Time, len(t.times), len(t.times))
@@ -65,6 +66,27 @@ func (t *Track) TimeShift(newStart time.Time) *Track {
 // Waypoint returns the waypoint at a given index
 func (t *Track) Waypoint(i int) *Waypoint {
 	return &Waypoint{t.path.GetAt(i), t.times[i]}
+}
+
+func (t *Track) WayPointAtTime(mid time.Time) (*Waypoint, error) {
+	if mid.Before(t.times[0]) || mid.After(t.times[len(t.times)-1]) {
+		return nil, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
+	}
+
+	endIdx := sort.Search(len(t.times), func(i int) bool { return t.times[i].After(mid) })
+	startIdx := endIdx - 1
+
+	end := t.times[endIdx]
+	start := t.times[endIdx-1]
+
+	// Range [0, 1] relative distance between two neighboring waypoints
+	percent := float64(mid.Sub(start) / end.Sub(start))
+
+	line := geo.NewLine(t.path.GetAt(startIdx), t.path.GetAt(endIdx))
+
+	midPt := line.Interpolate(percent)
+
+	return &Waypoint{midPt, mid}, nil
 }
 
 func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {
