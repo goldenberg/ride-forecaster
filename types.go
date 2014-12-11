@@ -14,8 +14,10 @@ type Waypoint struct {
 	Time time.Time
 }
 
+// maybe shouldn't embed because track.Resample() means a
+// very different thing than Path.Resample()
 type Track struct {
-	path  *geo.Path
+	*geo.Path
 	times []time.Time
 }
 
