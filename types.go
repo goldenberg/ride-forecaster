@@ -14,11 +14,13 @@ type Waypoint struct {
 	Time time.Time
 }
 
-// maybe shouldn't embed because track.Resample() means a
-// very different thing than Path.Resample()
 type Track struct {
-	*geo.Path
+	path  *geo.Path
 	times []time.Time
+}
+
+func (t *Track) Path() *geo.Path {
+	return t.path
 }
 
 // Velocity is measured in m/s
@@ -50,7 +52,11 @@ func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
 		var timeDelta = time.Duration(segmentDist / v.Ms() * float64(time.Second))
 		times[i+1] = times[i].Add(timeDelta)
 	}
-	return NewTrack(p, times)
+	t, err := NewTrack(p, times)
+	if err != nil {
+		panic("times was created to be the same length. Should be impossible")
+	}
+	return t
 }
 
 // TimeShift translates the Track to a different start time.
@@ -61,15 +67,26 @@ func (t *Track) TimeShift(newStart time.Time) *Track {
 	for i := 0; i < len(t.times); i++ {
 		newTimes[i] = t.times[i].Add(delta)
 	}
-	return NewTrack(t.Path, newTimes)
+	shifted, err := NewTrack(t.path, newTimes)
+	if err != nil {
+		panic("times was created to be the same length. Should be impossible")
+	}
+	return shifted
 }
 
-func NewTrack(p *geo.Path, times []time.Time) *Track {
-	return &Track{p, times}
+// NewTrack creates a new track from a path and slice of
+func NewTrack(p *geo.Path, times []time.Time) (*Track, error) {
+	if p.Length() != len(times) {
+		return nil, fmt.Errorf("path had length %i but times had length %i. Must be equal.",
+			p.Length(),
+			len(times))
+	}
+	return &Track{p, times}, nil
 }
 
+// Waypoint returns the waypoint at a given index
 func (t *Track) Waypoint(i int) *Waypoint {
-	return &Waypoint{t.GetAt(i), t.times[i]}
+	return &Waypoint{t.path.GetAt(i), t.times[i]}
 }
 
 func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {

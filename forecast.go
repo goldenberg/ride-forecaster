@@ -59,19 +59,19 @@ func main() {
 	var userVelocity = velocity.Get()
 	if userVelocity != 0 {
 		fmt.Println("Constant velocity: ", userVelocity.Mph())
-		track = PredictTrack(track.Path, velocity.Get(), userStart)
+		track = PredictTrack(track.Path(), velocity.Get(), userStart)
 	}
 
 	// If we still don't have a start time
 	// Print weather at every nth point.
 	// Ignore the last point because we won't be able to calculate the bearing at it.
-	for i := 0; i < track.Length()-1; i++ {
+	for i := 0; i < track.Path().Length()-1; i++ {
 		// Crude sampling to be replaced a better spline or similar
 		if i%30 != 0 {
 			continue
 		}
 		wpt := track.Waypoint(i)
-		next := track.Path.GetAt(i + 1)
+		next := track.path.GetAt(i + 1)
 
 		f, err := Forecast(wpt)
 		if err != nil {
