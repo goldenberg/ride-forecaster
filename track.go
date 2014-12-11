@@ -68,9 +68,9 @@ func (t *Track) Waypoint(i int) *Waypoint {
 	return &Waypoint{t.path.GetAt(i), t.times[i]}
 }
 
-func (t *Track) WayPointAtTime(mid time.Time) (*Waypoint, error) {
+func (t *Track) WayPointAndBearingAtTime(mid time.Time) (*Waypoint, Bearing, error) {
 	if mid.Before(t.times[0]) || mid.After(t.times[len(t.times)-1]) {
-		return nil, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
+		return nil, nil, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
 	}
 
 	endIdx := sort.Search(len(t.times), func(i int) bool { return t.times[i].After(mid) })
@@ -81,12 +81,10 @@ func (t *Track) WayPointAtTime(mid time.Time) (*Waypoint, error) {
 
 	// Range [0, 1] relative distance between two neighboring waypoints
 	percent := float64(mid.Sub(start) / end.Sub(start))
-
 	line := geo.NewLine(t.path.GetAt(startIdx), t.path.GetAt(endIdx))
-
 	midPt := line.Interpolate(percent)
 
-	return &Waypoint{midPt, mid}, nil
+	return &Waypoint{midPt, mid}, midPt.BearingTo(t.path.GetAt(endIdx)), nil
 }
 
 func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {
