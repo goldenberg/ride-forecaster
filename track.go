@@ -13,6 +13,15 @@ type Track struct {
 	times []time.Time
 }
 
+// NewTrack creates a new track from a path and slice of times.
+func NewTrack(p *geo.Path, times []time.Time) (*Track, error) {
+	if p.Length() != len(times) {
+		return nil, fmt.Errorf("path had length %i but times had length %i. Must be equal.",
+			p.Length(),
+			len(times))
+	}
+	return &Track{p, times}, nil
+}
 func (t *Track) Path() *geo.Path {
 	return t.path
 }
@@ -53,16 +62,6 @@ func (t *Track) TimeShift(newStart time.Time) *Track {
 	return shifted
 }
 
-// NewTrack creates a new track from a path and slice of
-func NewTrack(p *geo.Path, times []time.Time) (*Track, error) {
-	if p.Length() != len(times) {
-		return nil, fmt.Errorf("path had length %i but times had length %i. Must be equal.",
-			p.Length(),
-			len(times))
-	}
-	return &Track{p, times}, nil
-}
-
 // Waypoint returns the waypoint at a given index
 func (t *Track) Waypoint(i int) *Waypoint {
 	return &Waypoint{t.path.GetAt(i), t.times[i]}
@@ -86,19 +85,4 @@ func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {
 	path := geo.NewPath()
 	path.SetPoints(points)
 	return &Track{path, times}
-}
-
-func deg2Rad(d float64) float64 {
-	return d * math.Pi / 180.0
-}
-
-func rad2Deg(r float64) float64 {
-	return 180.0 * r / math.Pi
-}
-
-func makeRadPos(r float64) float64 {
-	if r < 0 {
-		return 2*math.Pi - r
-	}
-	return r
 }

@@ -58,3 +58,19 @@ func (b Bearing) Radians() float64 {
 func (b Bearing) String() string {
 	return fmt.Sprintf("%3.f°", b.Degrees())
 }
+
+func deg2Rad(d float64) float64 {
+	return d * math.Pi / 180.0
+}
+
+func rad2Deg(r float64) float64 {
+	return 180.0 * r / math.Pi
+}
+
+// makeRadPos converts a negative angle to an equivalent positive one (e.g. -π/2 to 3π/2)
+func makeRadPos(r float64) float64 {
+	if r < 0 {
+		return 2*math.Pi - r
+	}
+	return r
+}
