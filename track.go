@@ -122,6 +122,7 @@ func (t *Track) LinearFitBearing(start, end int) Bearing {
 	}
 
 	// XXX: there's a dumb bug here, where this is always in the upper two quadrants
+	panic("currently, there's a bug where it's always in the upper two quadrants!")
 	return NewBearing(math.Atan(r.Slope()))
 }
 
