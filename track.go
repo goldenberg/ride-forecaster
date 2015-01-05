@@ -78,7 +78,8 @@ func (t *Track) Waypoint(i int) *Waypoint {
 	return &Waypoint{t.path.GetAt(i), t.times[i]}
 }
 
-func (t *Track) WayPointAndBearingAtTime(mid time.Time) (*Waypoint, Bearing, error) {
+// Interpolate a Waypoint and associated Bearing at a given point in time along the track.
+func (t *Track) Interpolate(mid time.Time) (*Waypoint, Bearing, error) {
 	if mid.Before(t.times[0]) || mid.After(t.times[len(t.times)-1]) {
 		return nil, 0, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
 	}

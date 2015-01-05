@@ -78,7 +78,7 @@ func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *DataPo
 	// Sample every n seconds, and compute a waypoint and bearing.
 	go func() {
 		for t := track.Start(); t.Before(track.End()); t = t.Add(sampleInterval) {
-			wpt, bearing, err := track.WayPointAndBearingAtTime(t)
+			wpt, bearing, err := track.Interpolate(t)
 			if err != nil {
 				fmt.Errorf("unable to compute intermediate waypoint at time [%s] due to ", t, err)
 			}
