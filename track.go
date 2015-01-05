@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	stats "github.com/GaryBoone/GoStats/stats"
 	geo "github.com/paulmach/go.geo"
 	gpx "github.com/ptrv/go-gpx"
+	"math"
 	"sort"
 	"time"
 )
@@ -48,6 +50,14 @@ func (t *Track) Path() *geo.Path {
 	return t.path
 }
 
+func (t *Track) Start() time.Time {
+	return t.times[0]
+}
+
+func (t *Track) End() time.Time {
+	return t.times[len(t.times)-1]
+}
+
 // TimeShift translates the Track to a different start time.
 func (t *Track) TimeShift(newStart time.Time) *Track {
 	var newTimes = make([]time.Time, len(t.times), len(t.times))
@@ -70,7 +80,7 @@ func (t *Track) Waypoint(i int) *Waypoint {
 
 func (t *Track) WayPointAndBearingAtTime(mid time.Time) (*Waypoint, Bearing, error) {
 	if mid.Before(t.times[0]) || mid.After(t.times[len(t.times)-1]) {
-		return nil, nil, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
+		return nil, 0, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
 	}
 
 	endIdx := sort.Search(len(t.times), func(i int) bool { return t.times[i].After(mid) })
@@ -84,7 +94,35 @@ func (t *Track) WayPointAndBearingAtTime(mid time.Time) (*Waypoint, Bearing, err
 	line := geo.NewLine(t.path.GetAt(startIdx), t.path.GetAt(endIdx))
 	midPt := line.Interpolate(percent)
 
-	return &Waypoint{midPt, mid}, midPt.BearingTo(t.path.GetAt(endIdx)), nil
+	bearing := NewBearingFromDegrees(midPt.BearingTo(t.path.GetAt(endIdx)))
+	// window := 25
+	// bearing := t.LinearFitBearing(intMax(0, startIdx-window), intMin(endIdx+window, len(t.times)-1))
+	return &Waypoint{midPt, mid}, bearing, nil
+}
+
+func intMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func intMax(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func (t *Track) LinearFitBearing(start, end int) Bearing {
+	var r stats.Regression
+	for i := start; i <= end; i++ {
+		pt := t.Waypoint(i)
+		r.Update(pt.X(), pt.Y())
+	}
+
+	// XXX: there's a dumb bug here, where this is always in the upper two quadrants
+	return NewBearing(math.Atan(r.Slope()))
 }
 
 func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {

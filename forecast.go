@@ -19,6 +19,7 @@ var SanFrancisco *time.Location
 // Default to Tomorrow
 var start timeValue
 var velocity velocityValue
+var sampleInterval time.Duration
 
 func celsiusToFahrenheit(t float64) float64 {
 	return 32 + 1.8*t
@@ -27,9 +28,12 @@ func celsiusToFahrenheit(t float64) float64 {
 func main() {
 	start = timeValue(time.Now())
 	velocity = velocityValue(NewVelocityFromMph(11))
+	sampleInterval = 5 * time.Minute
+
 	flag.Var(&start, "start", "Start time")
 	flag.Var(&velocity, "velocity", "Average velocity (in mph)")
 	flag.Parse()
+
 	var fname = flag.Arg(0)
 	g, err := gpx.Parse(fname)
 	if err != nil {
@@ -62,30 +66,24 @@ func main() {
 		track = PredictTrack(track.Path(), velocity.Get(), userStart)
 	}
 
-	// If we still don't have a start time
-	// Print weather at every nth point.
-	// Ignore the last point because we won't be able to calculate the bearing at it.
-	for i := 0; i < track.Path().Length()-1; i++ {
-		// Crude sampling to be replaced a better spline or similar
-		if i%30 != 0 {
-			continue
+	// Sample every n seconds, and compute a waypoint and bearing.
+	for t := track.Start(); t.Before(track.End()); t = t.Add(sampleInterval) {
+		wpt, bearing, err := track.WayPointAndBearingAtTime(t)
+		if err != nil {
+			fmt.Errorf("unable to compute intermediate waypoint at time [%s] due to ", t, err)
 		}
-		wpt := track.Waypoint(i)
-		next := track.path.GetAt(i + 1)
 
 		f, err := Forecast(wpt)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Compute the headwind relative to current bearing
-		bearing := NewBearingFromDegrees(wpt.BearingTo(next))
 		windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
-
 		windAngle := (windBearing - bearing).Normalize()
 
 		Print(wpt, f, bearing, windBearing, windAngle)
 	}
+
 }
 
 func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
@@ -98,7 +96,7 @@ func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 }
 
 func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing) {
-	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %.f o'clock \n",
+	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %.f o'clock.\n",
 		wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"),
 		wpt.Lng(), wpt.Lat(), bearing,
 		f.Currently.Temperature,
