@@ -66,27 +66,40 @@ func main() {
 		track = PredictTrack(track.Path(), velocity.Get(), userStart)
 	}
 
-	// Sample every n seconds, and compute a waypoint and bearing.
-	for t := track.Start(); t.Before(track.End()); t = t.Add(sampleInterval) {
-		wpt, bearing, err := track.WayPointAndBearingAtTime(t)
-		if err != nil {
-			fmt.Errorf("unable to compute intermediate waypoint at time [%s] due to ", t, err)
-		}
-
-		f, err := Forecast(wpt)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
-		windAngle := (windBearing - bearing).Normalize()
-
-		Print(wpt, f, bearing, windBearing, windAngle)
+	data := make([]DataPoint, 0)
+	for f := range ForecastTrack(track, sampleInterval) {
+		f.Print()
+		data = append(data, *f)
 	}
-
 }
 
-func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
+func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *DataPoint) {
+	out = make(chan *DataPoint, 0)
+	// Sample every n seconds, and compute a waypoint and bearing.
+	go func() {
+		for t := track.Start(); t.Before(track.End()); t = t.Add(sampleInterval) {
+			wpt, bearing, err := track.WayPointAndBearingAtTime(t)
+			if err != nil {
+				fmt.Errorf("unable to compute intermediate waypoint at time [%s] due to ", t, err)
+			}
+
+			f, err := ForecastWaypoint(wpt)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
+			windAngle := (windBearing - bearing).Normalize()
+
+			pt := &DataPoint{f, wpt, bearing, windAngle}
+			out <- pt
+		}
+		close(out)
+	}()
+	return out
+}
+
+func ForecastWaypoint(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	f, err = forecast.Get(API_KEY,
 		fmt.Sprintf("%.4f", wpt.Lng()),
 		fmt.Sprintf("%.4f", wpt.Lat()),
@@ -95,14 +108,21 @@ func Forecast(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	return
 }
 
-func Print(wpt *Waypoint, f *forecast.Forecast, bearing, windBearing, windAngle Bearing) {
+type DataPoint struct {
+	f         *forecast.Forecast
+	wpt       *Waypoint
+	bearing   Bearing
+	windAngle Bearing
+}
+
+func (d *DataPoint) Print() {
 	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %.f o'clock.\n",
-		wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"),
-		wpt.Lng(), wpt.Lat(), bearing,
-		f.Currently.Temperature,
-		f.Currently.PrecipProbability*100.,
-		f.Currently.PrecipType,
-		f.Currently.WindSpeed,
-		windBearing,
-		windAngle.OClock())
+		d.wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"),
+		d.wpt.Lng(), d.wpt.Lat(), d.bearing,
+		d.f.Currently.Temperature,
+		d.f.Currently.PrecipProbability*100.,
+		d.f.Currently.PrecipType,
+		d.f.Currently.WindSpeed,
+		NewBearingFromDegrees(d.f.Currently.WindBearing),
+		d.windAngle.OClock())
 }
