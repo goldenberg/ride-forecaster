@@ -25,9 +25,9 @@ func NewTrack(p *geo.Path, times []time.Time) (*Track, error) {
 	return &Track{p, times}, nil
 }
 
-// PredictTrack converts a Path into a Track assuming a constant velocity and start time.
+// PredictTrack converts a Path into a Track with the same number of points
+// assuming a constant velocity and start time.
 func PredictTrack(p *geo.Path, v Velocity, start time.Time) (t *Track) {
-	// var pathDist = p.GeoDistance()
 	var n = p.Length()
 	var times = make([]time.Time, n, n)
 
@@ -50,10 +50,12 @@ func (t *Track) Path() *geo.Path {
 	return t.path
 }
 
+// Start returns the start time of the track.
 func (t *Track) Start() time.Time {
 	return t.times[0]
 }
 
+// End returns the end time of the track.
 func (t *Track) End() time.Time {
 	return t.times[len(t.times)-1]
 }
@@ -80,10 +82,11 @@ func (t *Track) Waypoint(i int) *Waypoint {
 
 // Interpolate a Waypoint and associated Bearing at a given point in time along the track.
 func (t *Track) Interpolate(mid time.Time) (*Waypoint, Bearing, error) {
-	if mid.Before(t.times[0]) || mid.After(t.times[len(t.times)-1]) {
-		return nil, 0, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.times[0], t.times[len(t.times)-1])
+	if mid.Before(t.Start()) || mid.After(t.End()) {
+		return nil, 0, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.End(), t.Start())
 	}
 
+	// Find the the closest points in time before and after the target time.
 	endIdx := sort.Search(len(t.times), func(i int) bool { return t.times[i].After(mid) })
 	startIdx := endIdx - 1
 
@@ -92,6 +95,8 @@ func (t *Track) Interpolate(mid time.Time) (*Waypoint, Bearing, error) {
 
 	// Range [0, 1] relative distance between two neighboring waypoints
 	percent := float64(mid.Sub(start) / end.Sub(start))
+
+	// And then interpolate the location at that point.
 	line := geo.NewLine(t.path.GetAt(startIdx), t.path.GetAt(endIdx))
 	midPt := line.Interpolate(percent)
 
@@ -122,7 +127,7 @@ func (t *Track) LinearFitBearing(start, end int) Bearing {
 		r.Update(pt.X(), pt.Y())
 	}
 
-	// XXX: there's a dumb bug here, where this is always in the upper two quadrants
+	// XXX: there's a dumb bug here, where this is always in the upper two quadrants. This makes the linear fit wrong!
 	panic("currently, there's a bug where it's always in the upper two quadrants!")
 	return NewBearing(math.Atan(r.Slope()))
 }

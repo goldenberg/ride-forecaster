@@ -116,12 +116,13 @@ type DataPoint struct {
 }
 
 func (d *DataPoint) Print() {
-	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s %4.1f mph from %s at %.f o'clock.\n",
+	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s at %.3f in/hr  Wind: %2.1f mph from %s at %.f o'clock.\n",
 		d.wpt.Time.In(SanFrancisco).Format("Jan 2 03:04"),
 		d.wpt.Lng(), d.wpt.Lat(), d.bearing,
 		d.f.Currently.Temperature,
 		d.f.Currently.PrecipProbability*100.,
 		d.f.Currently.PrecipType,
+		d.f.Currently.PrecipIntensity,
 		d.f.Currently.WindSpeed,
 		NewBearingFromDegrees(d.f.Currently.WindBearing),
 		d.windAngle.OClock())

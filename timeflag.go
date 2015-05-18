@@ -33,6 +33,7 @@ func (t *timeValue) String() string {
 	return t.Get().Format(time.Stamp)
 }
 
+// velocityValue parses a velocity in MPH with one optional point past the decimal, e.g. 27.0
 // -- time.Time Value
 type velocityValue Velocity
 
