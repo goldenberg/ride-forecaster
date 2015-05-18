@@ -9,7 +9,7 @@ import (
 
 type Waypoint struct {
 	*geo.Point
-	Time time.Time
+	Time time.Time `json:"time,string"`
 }
 
 // Velocity is measured in m/s
