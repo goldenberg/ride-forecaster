@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	forecast "github.com/mlbright/forecast/v2"
 	gpx "github.com/ptrv/go-gpx"
 	"log"
-	"net/http"
 	"strconv"
 	"time"
 )
@@ -40,9 +38,7 @@ func main() {
 	flag.Parse()
 
 	if server {
-		http.HandleFunc("/forecast", handler)
-		http.ListenAndServe(":8080", nil)
-
+		startServer()
 	} else {
 		var fname = flag.Arg(0)
 		var startTime = start.Get()
@@ -59,28 +55,6 @@ func main() {
 		return
 	}
 
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Fprintf(w, "handling %s", r)
-
-	var startTime = time.Now()
-	var velocity = NewVelocityFromMph(10)
-	track, _ := ReadTrack("data/gpx_11/bofax_alpine11.gpx")
-
-	fmt.Println("Track has %i points", track.Path().Length())
-	track = ModelTrack(track, startTime, velocity)
-	data := make([]ForecastedLocation, 0)
-	for d := range ForecastTrack(track, sampleInterval) {
-		d.Print()
-		data = append(data, *d)
-	}
-
-	b, err := json.Marshal(data)
-	if err != nil {
-		fmt.Fprintf(w, "Error: %s", err)
-	}
-	w.Write(b)
 }
 
 // ReadTrack reads a Track from a GPX 1.1 file
