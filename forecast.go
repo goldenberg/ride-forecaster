@@ -51,7 +51,7 @@ func main() {
 		track, _ := ReadTrack(fname)
 		track = ModelTrack(track, startTime, userVelocity)
 
-		data := make([]DataPoint, 0)
+		data := make([]ForecastedLocation, 0)
 		for f := range ForecastTrack(track, sampleInterval) {
 			f.Print()
 			data = append(data, *f)
@@ -70,7 +70,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Track has %i points", track.Path().Length())
 	track = ModelTrack(track, startTime, velocity)
-	data := make([]DataPoint, 0)
+	data := make([]ForecastedLocation, 0)
 	for d := range ForecastTrack(track, sampleInterval) {
 		d.Print()
 		data = append(data, *d)
@@ -83,6 +83,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
+// ReadTrack reads a Track from a GPX 1.1 file
 func ReadTrack(fname string) (t *Track, err error) {
 	g, err := gpx.Parse(fname)
 	if err != nil {
@@ -95,33 +96,35 @@ func ReadTrack(fname string) (t *Track, err error) {
 	}
 
 	// Load the Track from the GPX file
-	track := NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
+	t = NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
 
 	// Print the start time. Parsing will fail if there is no Timestamp
-	originalStart, _ := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
-	fmt.Printf("Original GPX start %s\n", originalStart)
+	// originalStart, _ := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)
 
-	return track, err
+	return t, err
 }
 
+// ModelTrack translates a Track in time and rescales it to have a different constant velocity.
+// If startTime is zero, the track won't be translated, and if the velocity is zero the track
+// won't be rescaled.
 func ModelTrack(track *Track, startTime time.Time, velocity Velocity) (out *Track) {
-	// If the user specified a velocity, model the track.
+	// If the user specified a velocity, rescale the track.
 	if velocity != 0 {
-		fmt.Println("Constant velocity: ", velocity.Mph())
 		out = PredictTrack(track.Path(), velocity, startTime)
 	}
 
 	// If the user specified a time, TimeShift the track.
 	if !startTime.IsZero() {
 		out = out.TimeShift(startTime)
-		fmt.Printf("New start: %s\n", track.times[0])
 	}
 	return out
 }
 
-func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *DataPoint) {
+// ForecastTrack samples the track at a time interval, interpolating as necessary
+// computes the wind bearings, and queries for a forecast.
+func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *ForecastedLocation) {
 
-	out = make(chan *DataPoint, 0)
+	out = make(chan *ForecastedLocation, 0)
 	// Sample every n seconds, and compute a waypoint and bearing.
 	go func() {
 		for t := track.Start(); t.Before(track.End()); t = t.Add(sampleInterval) {
@@ -138,7 +141,7 @@ func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *DataPo
 			windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
 			windAngle := (windBearing - bearing).Normalize()
 
-			pt := &DataPoint{f, wpt, bearing, windAngle}
+			pt := &ForecastedLocation{f, wpt, bearing, windAngle}
 			out <- pt
 		}
 		close(out)
@@ -155,14 +158,14 @@ func ForecastWaypoint(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	return
 }
 
-type DataPoint struct {
+type ForecastedLocation struct {
 	Forecast  *forecast.Forecast `json:"forecast"`
 	Waypoint  *Waypoint          `json:"waypoint"`
 	Heading   Bearing            `json:"heading"`
 	WindAngle Bearing            `json:"windAngle"`
 }
 
-func (d *DataPoint) Print() {
+func (d *ForecastedLocation) Print() {
 	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s at %.3f in/hr  Wind: %2.1f mph from %s at %.f o'clock.\n",
 		d.Waypoint.Time.In(SanFrancisco).Format("Jan 2 03:04"),
 		d.Waypoint.Lng(), d.Waypoint.Lat(), d.Heading,

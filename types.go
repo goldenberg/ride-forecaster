@@ -19,10 +19,13 @@ func NewVelocityFromMph(mph float64) Velocity {
 	return Velocity(mph * 1609.34 / 3600.)
 
 }
+
+// Mph computes the velocity in miles per hour.
 func (v Velocity) Mph() float64 {
 	return float64(v/1609.34) * 3600
 }
 
+// Ms returns the velocity in meters per second.
 func (v Velocity) Ms() float64 {
 	return float64(v)
 }
