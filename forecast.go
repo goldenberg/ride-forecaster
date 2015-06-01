@@ -16,15 +16,10 @@ var API_KEY = "806d1d0e800d3f1466ebec725982cf00"
 
 var SanFrancisco *time.Location
 
-// Default to Tomorrow
 var start timeValue
 var velocity velocityValue
 var sampleInterval time.Duration
 var server bool
-
-func celsiusToFahrenheit(t float64) float64 {
-	return 32 + 1.8*t
-}
 
 func main() {
 	start = timeValue(time.Now())
@@ -32,7 +27,8 @@ func main() {
 	sampleInterval = 50 * time.Minute
 	server = false
 
-	flag.BoolVar(&server, "server", false, "Run in server mode.")
+	flag.BoolVar(&server, "server", true, "Run in server mode.")
+	// TODO: default to tomorrow at 8am
 	flag.Var(&start, "start", "Start time")
 	flag.Var(&velocity, "velocity", "Average velocity (in mph)")
 	flag.Parse()
