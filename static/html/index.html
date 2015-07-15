@@ -17,7 +17,7 @@
     Let's forecast your ride!
 </h1>
 
-<form ng-submit="submit()" id="forecastParams">
+<form novalidate ng-submit="submit()" id="forecastParams">
     <div>
         Route: <select name="route" ng-model="route">
         <option value="bofax_alpine11.gpx">
@@ -51,7 +51,8 @@
     <linechart data="data" options="options"></linechart>
 </div>
 <div>
-    Message: {{message}}
+    <a href="{{rawDataURL}}">Raw Data URL</a>
+    Status: {{status}}
 </div>
 </body>
 </html>
