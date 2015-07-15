@@ -24,10 +24,10 @@ var server bool
 func main() {
 	start = timeValue(time.Now())
 	velocity = velocityValue(NewVelocityFromMph(11))
-	sampleInterval = 50 * time.Minute
+	sampleInterval = 5 * time.Minute
 	server = false
 
-	flag.BoolVar(&server, "server", true, "Run in server mode.")
+	flag.BoolVar(&server, "server", false, "Run in server mode.")
 	// TODO: default to tomorrow at 8am
 	flag.Var(&start, "start", "Start time")
 	flag.Var(&velocity, "velocity", "Average velocity (in mph)")

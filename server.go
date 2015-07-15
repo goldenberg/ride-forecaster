@@ -12,10 +12,21 @@ import (
 	"time"
 )
 
+func Log(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func startServer() {
-	http.HandleFunc("/", index)
+//	http.HandleFunc("/", http.File("index.html"))
 	http.HandleFunc("/forecast", forecastHandler)
-	http.ListenAndServe(":8080", nil)
+
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	http.ListenAndServe(":8080", Log(http.DefaultServeMux))
 }
 
 type IndexPage struct {
@@ -27,6 +38,7 @@ const (
 	HTML5_DATE_FORMAT = "2006-01-02T15:04"
 )
 
+// index renders a page with an HTML form for choosing the route, starting time and velocity.
 func index(w http.ResponseWriter, r *http.Request) {
 	files, _ := ioutil.ReadDir("data/gpx_11")
 	choices := make([]string, len(files))
@@ -35,6 +47,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t, _ := template.ParseFiles("index.html")
+//	t = t.Delims("[[", "]]")
 	p := &IndexPage{
 		RouteChoices: choices,
 		DefaultTime:  time.Now().Format(HTML5_DATE_FORMAT),
@@ -43,6 +56,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+// forecastHandler handles a request to forecast a route at a specific time and place.
+// startTime, velocity and route are parsed from FormValues (with reasonable defaults).
 func forecastHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
