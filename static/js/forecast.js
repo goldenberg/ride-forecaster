@@ -2,6 +2,9 @@ console.log("forecast.js loaded");
 
 angular.module('forecasterApp', ['n3-line-chart'])
     .controller('ForecastController', function($scope, $http) {
+        $scope.route = "bofax_alpine11.gpx";
+        $scope.startTime = new Date();
+        $scope.velocity = 11;
         var forecaster = this;
         $scope.options = {
             axes: {
@@ -61,7 +64,7 @@ angular.module('forecasterApp', ['n3-line-chart'])
             windSpeed: 6.755,
         }];
         forecaster.submit = function() {
-            var url = "http://localhost:8080/forecast";// + $("forecastParams").serialize();
+            var url = "http://localhost:8080/forecast";
             var params = {
                 "route": $scope.route,
                 "startTime": $scope.startTime,
@@ -69,7 +72,7 @@ angular.module('forecasterApp', ['n3-line-chart'])
             };
             $scope.rawDataURL = url;
             $scope.status = "Fetching data from: " + url;
-            $http.get(url, params).
+            $http.get(url, {"params": params}).
                 success(function(resp, status, headers, config) {
                     $scope.status = "Received resp " + resp;
                     var newData = []
