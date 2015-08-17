@@ -3,11 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/bradfitz/gomemcache/memcache"
 	forecast "github.com/mlbright/forecast/v2"
 	gpx "github.com/ptrv/go-gpx"
 	"log"
 	"strconv"
 	"time"
+	"encoding/json"
 )
 
 var g *gpx.Gpx
@@ -103,7 +105,13 @@ func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *Foreca
 				fmt.Errorf("unable to compute intermediate waypoint at time [%s] due to ", t, err)
 			}
 
-			f, err := ForecastWaypoint(wpt)
+			useCache := true
+			var f *forecast.Forecast
+			if useCache {
+				f, err = lookupCache(wpt)
+			} else {
+				f, err = ForecastWaypoint(wpt)
+			}
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -117,6 +125,41 @@ func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *Foreca
 		close(out)
 	}()
 	return out
+}
+
+func lookupCache(wpt *Waypoint) (f *forecast.Forecast, err error) {
+	mc := memcache.New("localhost:11211")
+
+	cacheTime := wpt.Time.Round(time.Duration(time.Minute * 10))
+	cacheKey := fmt.Sprintf("%.4f,%.4f,%v", wpt.Lng(), wpt.Lat(), cacheTime.Format("01/02/2006.15:04"))
+	it, err := mc.Get(cacheKey)
+
+	if err == memcache.ErrCacheMiss {
+		f, err := ForecastWaypoint(wpt)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("cache miss for ", cacheKey)
+		val, err := json.Marshal(f)
+		if err != nil {
+			return nil, err
+		}
+		it := &memcache.Item{Key: cacheKey, Value: val}
+		err = mc.Set(it)
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
+	} else if err != nil {
+		return nil, err
+	} else {
+		fmt.Println("cache hit for ", cacheKey)
+		err = json.Unmarshal(it.Value, &f)
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
+	}
 }
 
 func ForecastWaypoint(wpt *Waypoint) (f *forecast.Forecast, err error) {

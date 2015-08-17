@@ -10,7 +10,9 @@ angular.module('forecasterApp', ['n3-line-chart'])
             axes: {
                 x: {
                     key: "x",
-                    type: "date"
+                    type: "date",
+                    min: $scope.startTime.getTime(),
+                    max: $scope.startTime.getTime() + 12 * 60 * 60 * 1000 // 12 hours later
                 },
             },
             series: [{
@@ -29,20 +31,33 @@ angular.module('forecasterApp', ['n3-line-chart'])
             },  {
                 y: "windAngle",
                 label: "Wind Angle",
-            },
-            ]
+            }
+            ],
+            tooltip: {
+                mode: "axes",
+//                formatter: function(x, y, series) {
+//                    return moment(x).fromNow() + " : " + y;
+//                }
+            }
         };
 
+//        $scope.data = [];
         $scope.data = [{
-            x: 0,
+            x: $scope.startTime,
             temperature: 0,
-            windSpeed: 0
+            windSpeed: 0,
+            precipAccumulation: 0,
+            heading: 0,
+            windAngle: 0,
 
-        }, {
-            x: 1,
+        }];  /*{
+            x: $scope.startTime + 61 * 60 * 1000,
             temperature: 0.993,
             windSpeed: 3.894,
-        }, {
+            precipAccumulation: 0,
+            heading: 0,
+            windAngle: 0,
+        }, ]; /*{
             x: 2,
             temperature: 1.947,
             windSpeed: 7.174,
@@ -62,7 +77,7 @@ angular.module('forecasterApp', ['n3-line-chart'])
             x: 6,
             temperature: 4.66,
             windSpeed: 6.755,
-        }];
+        }]; */
         forecaster.submit = function() {
             var url = "http://localhost:8080/forecast";
             var params = {
@@ -75,12 +90,10 @@ angular.module('forecasterApp', ['n3-line-chart'])
             $http.get(url, {"params": params}).
                 success(function(resp, status, headers, config) {
                     $scope.status = "Received resp " + resp;
-                    var newData = []
+                    $scope.data = [];
                     for (var i in resp) {
                         var currently = resp[i].forecast.currently;
-
-                        console.log("pushing " + currently);
-                        newData.push({
+                        $scope.data.push({
                             "x": currently.time,
                             temperature: currently.temperature,
                             windSpeed: currently.windSpeed,
@@ -89,7 +102,6 @@ angular.module('forecasterApp', ['n3-line-chart'])
                             windAngle: resp[i].windAngle
                         });
                     };
-                    $scope.data = newData;
                 })
                 .error(function(data, status, headers, config) {
                     // TODO
