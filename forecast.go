@@ -132,6 +132,7 @@ func lookupCache(wpt *Waypoint) (f *forecast.Forecast, err error) {
 
 	cacheTime := wpt.Time.Round(time.Duration(time.Minute * 10))
 	// 0.001 accuracy of lat/lng is ~110m
+	// 0.01 accuracy is 1.1km
 	cacheKey := fmt.Sprintf("%.3f,%.3f,%v", wpt.Lng(), wpt.Lat(), cacheTime.Format("01/02/2006.15:04"))
 	it, err := mc.Get(cacheKey)
 

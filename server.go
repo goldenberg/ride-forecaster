@@ -35,10 +35,6 @@ type IndexPage struct {
 	DefaultTime  string
 }
 
-const (
-	HTML5_DATE_FORMAT = "2006-01-02T15:04"
-)
-
 // index renders a page with an HTML form for choosing the route, starting time and velocity.
 func index(w http.ResponseWriter, r *http.Request) {
 	files, _ := ioutil.ReadDir("data/gpx_11")
@@ -51,7 +47,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 //	t = t.Delims("[[", "]]")
 	p := &IndexPage{
 		RouteChoices: choices,
-		DefaultTime:  time.Now().Format(HTML5_DATE_FORMAT),
+		DefaultTime:  time.Now().Format(time.RFC3339Nano),
 	}
 
 	t.Execute(w, p)
@@ -66,8 +62,9 @@ func forecastHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	startTime, err := time.Parse(HTML5_DATE_FORMAT, r.FormValue("startTime"))
+	startTime, err := time.Parse(time.RFC3339Nano, r.FormValue("startTime"))
 	if startTime.IsZero() || err != nil {
+		log.Printf("Got error %v parsing %v", err, r.FormValue("startTime"))
 		startTime = time.Now()
 	}
 

@@ -5,6 +5,7 @@ import (
 	geo "github.com/paulmach/go.geo"
 	"math"
 	"time"
+	"strconv"
 )
 
 type Waypoint struct {
@@ -68,6 +69,19 @@ func (b Bearing) Radians() float64 {
 
 func (b Bearing) String() string {
 	return fmt.Sprintf("%3.f°", b.Degrees())
+}
+
+func (b Bearing) UnmarshalJSON(a []byte) error {
+	deg, err := strconv.ParseFloat(string(a), 10);
+	if err != nil {
+		return err
+	}
+	b = NewBearingFromDegrees(deg)
+	return nil
+}
+
+func (b Bearing) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%3.f", b.Degrees())), nil
 }
 
 func deg2Rad(d float64) float64 {

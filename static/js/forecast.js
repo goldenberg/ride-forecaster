@@ -3,17 +3,31 @@ console.log("forecast.js loaded");
 angular.module('forecasterApp', ['n3-line-chart'])
     .controller('ForecastController', function($scope, $http) {
         $scope.route = "bofax_alpine11.gpx";
-        $scope.startTime = new Date();
+        $scope.startTime = new Date(2015, 0, 01, 08, 0, 0);
         $scope.velocity = 11;
         var forecaster = this;
+        var measurementUnits = {
+            "temperature": "° F",
+            "windSpeed": " mph",
+            "precipAccumulation": " in/hr",
+            "heading": "°",
+            "windAngle": " o'clock"
+        }
         $scope.options = {
             axes: {
                 x: {
                     key: "x",
                     type: "date",
-                    min: $scope.startTime.getTime(),
-                    max: $scope.startTime.getTime() + 12 * 60 * 60 * 1000 // 12 hours later
+                    min: new Date($scope.startTime.getTime()),
+//                    max: new Date($scope.startTime.getTime() + 4 * 60 * 60 * 1000) // 4 hours later
+                    zoomable: true
                 },
+                y: {
+                    key: "temperature",
+                },
+                y2: {
+                    key: "precipAccumulation",
+                }
             },
             series: [{
                 y: "temperature",
@@ -33,12 +47,14 @@ angular.module('forecasterApp', ['n3-line-chart'])
                 label: "Wind Angle",
             }
             ],
-//            tooltip: {
-//                mode: "scrubber",
-//                formatter: function(x, y, series) {
-//                    return moment(x).fromNow() + " : " + y;
-//                }
-//            }
+            tooltip: {
+                mode: "scrubber",
+                formatter: function(x, y, series) {
+                    var unit = measurementUnits[series.y];
+                    return x.getHours() + ":" + x.getUTCMinutes() + "  " +
+                        Math.round(y * 10) / 10. + unit;
+                }
+            }
         };
 
         $scope.data = [{
