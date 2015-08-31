@@ -26,7 +26,7 @@ func startServer() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	http.ListenAndServe(":1234", Log(http.DefaultServeMux))
+	http.ListenAndServe(":8080", Log(http.DefaultServeMux))
 
 }
 

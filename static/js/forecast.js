@@ -33,15 +33,14 @@ angular.module('forecasterApp', ['n3-line-chart'])
                 label: "Wind Angle",
             }
             ],
-            tooltip: {
-                mode: "axes",
+//            tooltip: {
+//                mode: "scrubber",
 //                formatter: function(x, y, series) {
 //                    return moment(x).fromNow() + " : " + y;
 //                }
-            }
+//            }
         };
 
-//        $scope.data = [];
         $scope.data = [{
             x: $scope.startTime,
             temperature: 0,
@@ -50,34 +49,7 @@ angular.module('forecasterApp', ['n3-line-chart'])
             heading: 0,
             windAngle: 0,
 
-        }];  /*{
-            x: $scope.startTime + 61 * 60 * 1000,
-            temperature: 0.993,
-            windSpeed: 3.894,
-            precipAccumulation: 0,
-            heading: 0,
-            windAngle: 0,
-        }, ]; /*{
-            x: 2,
-            temperature: 1.947,
-            windSpeed: 7.174,
-        }, {
-            x: 3,
-            temperature: 2.823,
-            windSpeed: 9.32,
-        }, {
-            x: 4,
-            temperature: 3.587,
-            windSpeed: 9.996,
-        }, {
-            x: 5,
-            temperature: 4.207,
-            windSpeed: 9.093,
-        }, {
-            x: 6,
-            temperature: 4.66,
-            windSpeed: 6.755,
-        }]; */
+        }];
         forecaster.submit = function() {
             var url = "http://localhost:8080/forecast";
             var params = {
@@ -94,7 +66,7 @@ angular.module('forecasterApp', ['n3-line-chart'])
                     for (var i in resp) {
                         var currently = resp[i].forecast.currently;
                         $scope.data.push({
-                            "x": currently.time,
+                            "x": new Date(resp[i].waypoint.time),
                             temperature: currently.temperature,
                             windSpeed: currently.windSpeed,
                             precipAccumulation: currently.precipAccumulation,
@@ -104,7 +76,7 @@ angular.module('forecasterApp', ['n3-line-chart'])
                     };
                 })
                 .error(function(data, status, headers, config) {
-                    // TODO
+                    $scope.status = "Got error status " + status + ": " + data;
                 });
         };
     });

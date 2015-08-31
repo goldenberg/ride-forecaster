@@ -131,7 +131,8 @@ func lookupCache(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	mc := memcache.New("localhost:11211")
 
 	cacheTime := wpt.Time.Round(time.Duration(time.Minute * 10))
-	cacheKey := fmt.Sprintf("%.4f,%.4f,%v", wpt.Lng(), wpt.Lat(), cacheTime.Format("01/02/2006.15:04"))
+	// 0.001 accuracy of lat/lng is ~110m
+	cacheKey := fmt.Sprintf("%.3f,%.3f,%v", wpt.Lng(), wpt.Lat(), cacheTime.Format("01/02/2006.15:04"))
 	it, err := mc.Get(cacheKey)
 
 	if err == memcache.ErrCacheMiss {
