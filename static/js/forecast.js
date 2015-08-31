@@ -11,16 +11,16 @@ angular.module('forecasterApp', ['n3-line-chart'])
             "windSpeed": " mph",
             "precipAccumulation": " in/hr",
             "heading": "°",
-            "windAngle": " o'clock"
+            "windAngle": "°",
         }
         $scope.options = {
             axes: {
                 x: {
                     key: "x",
                     type: "date",
-                    min: new Date($scope.startTime.getTime()),
+//                    min: new Date($scope.startTime.getTime()),
 //                    max: new Date($scope.startTime.getTime() + 4 * 60 * 60 * 1000) // 4 hours later
-                    zoomable: true
+//                    zoomable: true
                 },
                 y: {
                     key: "temperature",
@@ -95,4 +95,15 @@ angular.module('forecasterApp', ['n3-line-chart'])
                     $scope.status = "Got error status " + status + ": " + data;
                 });
         };
+
+
     });
+
+// setup the map
+var map;
+function initMap() {
+map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: -34.397, lng: 150.644},
+    zoom: 8
+});
+}
