@@ -1,6 +1,6 @@
 console.log("forecast.js loaded");
 
-angular.module('forecasterApp', ['n3-line-chart'])
+angular.module('forecasterApp', ['n3-line-chart', 'ngMap'])
     .controller('ForecastController', function($scope, $http) {
         $scope.route = "bofax_alpine11.gpx";
         $scope.startTime = new Date(2015, 0, 01, 08, 0, 0);
@@ -66,6 +66,8 @@ angular.module('forecasterApp', ['n3-line-chart'])
             windAngle: 0,
 
         }];
+
+        $scope.routePath = [];
         forecaster.submit = function() {
             var url = "http://localhost:8080/forecast";
             var params = {
@@ -79,6 +81,9 @@ angular.module('forecasterApp', ['n3-line-chart'])
                 success(function(resp, status, headers, config) {
                     $scope.status = "Received resp " + resp;
                     $scope.data = [];
+
+                    var path = $scope.poly.getPath();
+
                     for (var i in resp) {
                         var currently = resp[i].forecast.currently;
                         $scope.data.push({
@@ -89,21 +94,39 @@ angular.module('forecasterApp', ['n3-line-chart'])
                             heading: resp[i].heading,
                             windAngle: resp[i].windAngle
                         });
+
+                        var waypt = resp[i].waypoint.Point;
+                        // var path = $scope.path //poly.getPath();
+                        console.log(waypt[0]);
+                        // path.push(google.maps.LatLng(waypt[0], waypt[1]));
+                        $scope.routePath.push([waypt[0], waypt[1]]);
                     };
+                    // $scope.poly.setPath(path);
                 })
                 .error(function(data, status, headers, config) {
                     $scope.status = "Got error status " + status + ": " + data;
                 });
         };
 
+        $scope.googleMapsUrl="http://maps.google.com/maps/api/js?v=3.20&key=AIzaSyA6rVO54LQO9Ln0qyQHv6Gh_Llo3xO_HVs"
+
+        $scope.$on('mapInitialized', function(event, map) {
+            // $scope.poly = new google.maps.Polyline({
+            //   strokeColor: '#000000',
+            //   strokeOpacity: 1.0,
+            //   strokeWeight: 3,
+            //   // path: []
+            //   // path: [
+            //     // {lat: 37.772, lng: -122.214},
+            //     // {lat: 21.291, lng: -157.821}
+            //   // ]
+            // });
+            // // $scope.poly = poly
+            // $scope.poly.setMap(map);
+            // console.log($scope.poly.getPath());
+            console.log("initing map");
+
+        })
+
 
     });
-
-// setup the map
-var map;
-function initMap() {
-map = new google.maps.Map(document.getElementById('map'), {
-    center: {lat: -34.397, lng: 150.644},
-    zoom: 8
-});
-}

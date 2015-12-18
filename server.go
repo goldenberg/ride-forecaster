@@ -26,6 +26,10 @@ func startServer() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
+	// TODO: this exposes the entire bower_components subdir incl all source
+	bower_fs := http.FileServer(http.Dir("bower_components"))
+	http.Handle("/bower_components/", http.StripPrefix("/bower_components/", bower_fs))
+
 	http.ListenAndServe(":8080", Log(http.DefaultServeMux))
 
 }
