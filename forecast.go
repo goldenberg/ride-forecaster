@@ -1,15 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/bradfitz/gomemcache/memcache"
 	forecast "github.com/mlbright/forecast/v2"
 	gpx "github.com/ptrv/go-gpx"
-	"log"
-	"strconv"
-	"time"
-	"encoding/json"
 )
 
 var g *gpx.Gpx
@@ -57,7 +59,11 @@ func main() {
 
 // ReadTrack reads a Track from a GPX 1.1 file
 func ReadTrack(fname string) (t *Track, err error) {
-	g, err := gpx.Parse(fname)
+	f, err := os.Open(fname)
+	if err != nil {
+		log.Fatalf("Error '%s' opening '%s'", err, fname)
+	}
+	g, err := gpx.Parse(f)
 	if err != nil {
 		log.Fatalf("Error '%s' opening '%s'", err, fname)
 	}
@@ -68,7 +74,7 @@ func ReadTrack(fname string) (t *Track, err error) {
 	}
 
 	// Load the Track from the GPX file
-	t = NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Points)
+	t = NewTrackFromGpxWpts(g.Tracks[0].Segments[0].Waypoints)
 
 	// Print the start time. Parsing will fail if there is no Timestamp
 	// originalStart, _ := time.Parse(gpx.TIMELAYOUT, g.Metadata.Timestamp)

@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	stats "github.com/GaryBoone/GoStats/stats"
-	geo "github.com/paulmach/go.geo"
-	gpx "github.com/ptrv/go-gpx"
 	"math"
 	"sort"
 	"time"
+
+	stats "github.com/GaryBoone/GoStats/stats"
+	geo "github.com/paulmach/go.geo"
+	gpx "github.com/ptrv/go-gpx"
 )
 
 type Track struct {
@@ -132,18 +133,18 @@ func (t *Track) LinearFitBearing(start, end int) Bearing {
 	return NewBearing(math.Atan(r.Slope()))
 }
 
-func NewTrackFromGpxWpts(wpts []gpx.GpxWpt) (track *Track) {
+func NewTrackFromGpxWpts(wpts []gpx.Wpt) (track *Track) {
 	times := make([]time.Time, len(wpts), len(wpts))
 	points := make([]geo.Point, len(wpts), len(wpts))
 
 	for i, wpt := range wpts {
 		points[i] = *geo.NewPoint(wpt.Lat, wpt.Lon)
-		t, err := time.Parse(gpx.TIMELAYOUT, wpt.Timestamp)
-		if err != nil {
-			// log.Fatalf("Error '%s' parsing timestamp '%s'", err, wpt.Timestamp)
-			// XXXXXXX: really really stupid
-			times[i] = time.Now()
-		}
+		t := wpt.Time()
+		// if t == 0 {
+		// 	// log.Fatalf("Error '%s' parsing timestamp '%s'", err, wpt.Timestamp)
+		// 	// XXXXXXX: really really stupid
+		// 	times[i] = time.Now()
+		// }
 		times[i] = t
 	}
 
