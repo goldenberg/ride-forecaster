@@ -16,9 +16,8 @@ import (
 
 var g *gpx.Gpx
 
-var API_KEY = "806d1d0e800d3f1466ebec725982cf00"
-
-var SanFrancisco *time.Location
+var apiKey = "806d1d0e800d3f1466ebec725982cf00"
+var sanFrancisco *time.Location
 
 var start timeValue
 var velocity velocityValue
@@ -68,7 +67,7 @@ func ReadTrack(fname string) (t *Track, err error) {
 		log.Fatalf("Error '%s' opening '%s'", err, fname)
 	}
 
-	SanFrancisco, err = time.LoadLocation("America/Los_Angeles")
+	sanFrancisco, err = time.LoadLocation("America/Los_Angeles")
 	if err != nil {
 		log.Fatalf("Couldn't load location %s", err)
 	}
@@ -106,7 +105,7 @@ func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *Foreca
 	// Sample every n seconds, and compute a waypoint and bearing.
 	go func() {
 		for t := track.Start(); t.Before(track.End()); t = t.Add(sampleInterval) {
-			wpt, bearing, err := track.Interpolate(t)
+			wpt, bearing, mileage, err := track.Interpolate(t)
 			if err != nil {
 				fmt.Errorf("unable to compute intermediate waypoint at time [%s] due to ", t, err)
 			}
@@ -125,7 +124,7 @@ func ForecastTrack(track *Track, sampleInterval time.Duration) (out chan *Foreca
 			windBearing := NewBearingFromDegrees(f.Currently.WindBearing)
 			windAngle := (windBearing - bearing).Normalize()
 
-			pt := &ForecastedLocation{f, wpt, bearing, windAngle}
+			pt := &ForecastedLocation{f, wpt, bearing, windAngle, mileage}
 			out <- pt
 		}
 		close(out)
@@ -147,7 +146,7 @@ func lookupCache(wpt *Waypoint) (f *forecast.Forecast, err error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("cache miss for ", cacheKey)
+		// fmt.Println("cache miss for ", cacheKey)
 		val, err := json.Marshal(f)
 		if err != nil {
 			return nil, err
@@ -161,7 +160,7 @@ func lookupCache(wpt *Waypoint) (f *forecast.Forecast, err error) {
 	} else if err != nil {
 		return nil, err
 	} else {
-		fmt.Println("cache hit for ", cacheKey)
+		// fmt.Println("cache hit for ", cacheKey)
 		err = json.Unmarshal(it.Value, &f)
 		if err != nil {
 			return nil, err
@@ -171,7 +170,7 @@ func lookupCache(wpt *Waypoint) (f *forecast.Forecast, err error) {
 }
 
 func ForecastWaypoint(wpt *Waypoint) (f *forecast.Forecast, err error) {
-	f, err = forecast.Get(API_KEY,
+	f, err = forecast.Get(apiKey,
 		fmt.Sprintf("%.4f", wpt.Lng()),
 		fmt.Sprintf("%.4f", wpt.Lat()),
 		strconv.FormatInt(wpt.Time.Unix(), 10),
@@ -184,12 +183,13 @@ type ForecastedLocation struct {
 	Waypoint  *Waypoint          `json:"waypoint"`
 	Heading   Bearing            `json:"heading"`
 	WindAngle Bearing            `json:"windAngle"`
+	Mileage   float64            `json:"mileage"`
 }
 
 func (d *ForecastedLocation) Print() {
-	fmt.Printf("%s (%.3f, %.3f, %s): %.1f°F %.f%% %s at %.3f in/hr  Wind: %2.1f mph from %s at %.f o'clock.\n",
-		d.Waypoint.Time.In(SanFrancisco).Format("Jan 2 03:04"),
-		d.Waypoint.Lng(), d.Waypoint.Lat(), d.Heading,
+	fmt.Printf("%s (%.3f, %.3f, %s, %.fkm): %.1f°F %.f%% %s at %.3f in/hr  Wind: %2.1f mph from %s at %.f o'clock.\n",
+		d.Waypoint.Time.In(sanFrancisco).Format("Jan 2 03:04"),
+		d.Waypoint.Lng(), d.Waypoint.Lat(), d.Heading, d.Mileage/1000.,
 		d.Forecast.Currently.Temperature,
 		d.Forecast.Currently.PrecipProbability*100.,
 		d.Forecast.Currently.PrecipType,

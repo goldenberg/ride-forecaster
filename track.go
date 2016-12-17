@@ -82,9 +82,9 @@ func (t *Track) Waypoint(i int) *Waypoint {
 }
 
 // Interpolate a Waypoint and associated Bearing at a given point in time along the track.
-func (t *Track) Interpolate(mid time.Time) (*Waypoint, Bearing, error) {
+func (t *Track) Interpolate(mid time.Time) (*Waypoint, Bearing, float64, error) {
 	if mid.Before(t.Start()) || mid.After(t.End()) {
-		return nil, 0, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.End(), t.Start())
+		return nil, 0, 0, fmt.Errorf("time %s was before first time %s, or after last time %s", mid, t.End(), t.Start())
 	}
 
 	// Find the the closest points in time before and after the target time.
@@ -101,10 +101,20 @@ func (t *Track) Interpolate(mid time.Time) (*Waypoint, Bearing, error) {
 	line := geo.NewLine(t.path.GetAt(startIdx), t.path.GetAt(endIdx))
 	midPt := line.Interpolate(percent)
 
+	distance := t.GeoDistanceTo(startIdx) + t.path.GetAt(startIdx).GeoDistanceFrom(midPt)
 	bearing := NewBearingFromDegrees(midPt.BearingTo(t.path.GetAt(endIdx)))
 	// window := 25
 	// bearing := t.LinearFitBearing(intMax(0, startIdx-window), intMin(endIdx+window, len(t.times)-1))
-	return &Waypoint{midPt, mid}, bearing, nil
+
+	return &Waypoint{midPt, mid}, bearing, distance, nil
+}
+
+func (t *Track) GeoDistanceTo(i int) (distance float64) {
+	distance = 0.
+	for j := 0; j < i; j++ {
+		distance += t.path.GetAt(j).GeoDistanceFrom(t.path.GetAt(j + 1))
+	}
+	return distance
 }
 
 func intMin(a, b int) int {
