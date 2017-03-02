@@ -18,9 +18,12 @@ func Log(handler http.Handler) http.Handler {
 		handler.ServeHTTP(w, r)
 	})
 }
+func main() {
+	startServer()
+}
 
 func startServer() {
-//	http.HandleFunc("/", http.File("index.html"))
+	//	http.HandleFunc("/", http.File("index.html"))
 	http.HandleFunc("/forecast", forecastHandler)
 
 	fs := http.FileServer(http.Dir("static"))
@@ -44,7 +47,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t, _ := template.ParseFiles("index.html")
-//	t = t.Delims("[[", "]]")
+	//	t = t.Delims("[[", "]]")
 	p := &IndexPage{
 		RouteChoices: choices,
 		DefaultTime:  time.Now().Format(time.RFC3339Nano),

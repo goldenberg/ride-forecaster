@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -18,43 +17,6 @@ var g *gpx.Gpx
 
 var apiKey = "806d1d0e800d3f1466ebec725982cf00"
 var sanFrancisco *time.Location
-
-var start timeValue
-var velocity velocityValue
-var sampleInterval time.Duration
-var server bool
-
-func main() {
-	start = timeValue(time.Now())
-	velocity = velocityValue(NewVelocityFromMph(11))
-	sampleInterval = 5 * time.Minute
-	server = false
-
-	flag.BoolVar(&server, "server", false, "Run in server mode.")
-	// TODO: default to tomorrow at 8am
-	flag.Var(&start, "start", "Start time")
-	flag.Var(&velocity, "velocity", "Average velocity (in mph)")
-	flag.Parse()
-
-	if server {
-		startServer()
-	} else {
-		var fname = flag.Arg(0)
-		var startTime = start.Get()
-		var userVelocity = velocity.Get()
-
-		track, _ := ReadTrack(fname)
-		track = ModelTrack(track, startTime, userVelocity)
-
-		data := make([]ForecastedLocation, 0)
-		for f := range ForecastTrack(track, sampleInterval) {
-			f.Print()
-			data = append(data, *f)
-		}
-		return
-	}
-
-}
 
 // ReadTrack reads a Track from a GPX 1.1 file
 func ReadTrack(fname string) (t *Track, err error) {

@@ -1,11 +1,12 @@
-package main
+package types
 
 import (
 	"fmt"
-	geo "github.com/paulmach/go.geo"
 	"math"
-	"time"
 	"strconv"
+	"time"
+
+	geo "github.com/paulmach/go.geo"
 )
 
 type Waypoint struct {
@@ -72,7 +73,7 @@ func (b Bearing) String() string {
 }
 
 func (b Bearing) UnmarshalJSON(a []byte) error {
-	deg, err := strconv.ParseFloat(string(a), 10);
+	deg, err := strconv.ParseFloat(string(a), 10)
 	if err != nil {
 		return err
 	}

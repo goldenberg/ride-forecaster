@@ -157,7 +157,7 @@ func NewTrackFromGpxWpts(wpts []gpx.Wpt) (track *Track) {
 		// }
 		times[i] = t
 	}
-
+	fmt.Println("read file with", len(points), "points")
 	path := geo.NewPath()
 	path.SetPoints(points)
 	return &Track{path, times}
